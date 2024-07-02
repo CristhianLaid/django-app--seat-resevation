@@ -101,7 +101,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-APPEND_SLASH = False
+APPEND_SLASH = True
 
 
 AUTH_USER_MODEL = 'security.User'

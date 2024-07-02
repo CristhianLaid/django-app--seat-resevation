@@ -95,9 +95,9 @@ class ReservacionManager(models.Manager):
 class Reservacion(ModelBase):
     usuario = models.ForeignKey(User, on_delete=models.CASCADE)
     fecha_reservacion = models.DateTimeField()
-    sensor_activado = models.OneToOneField(Sensor, on_delete=models.SET_NULL, null=True, blank=True)
+    sensor_activado = models.ForeignKey(Sensor, on_delete=models.CASCADE, null=True, blank=True)
     active = models.BooleanField(default=True)
-    
+    placa = models.CharField(max_length=250)
     objects = ReservacionManager()
     
     class Meta:

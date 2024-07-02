@@ -1,5 +1,5 @@
 from django.urls import path
-from apps.reservation.views.reservacion import crear_reservacion
+from apps.reservation.views.reservacion import crear_reservacion, actualizar_reservacion
 from apps.reservation.views.sensor import createSensor, detail_one_sensors,updateSensor, deleteSensor, detail_sensor
 
 urlpatterns = []
@@ -16,5 +16,6 @@ urlpatterns += [
 
 #Servicios
 urlpatterns += [
-    path('reservacion/save/', crear_reservacion, name='crear_reservacion'),
+    path('reservacion/save/', crear_reservacion, name='crear_reservacion'), # Endpoint para crear un reservacion
+    path('reservacion/update/', actualizar_reservacion, name='actualizar_reservacion'), #Endpoint para actualizar una reservacion
 ]
