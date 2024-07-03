@@ -68,8 +68,107 @@ def create_reservacion(user, sensor, placa):
         placa=placa,
         active=True
     )
-    reservacion.save()
+    
+    sensor.estado = True 
+    sensor.save(update_fields=['estado'])
+    
     return reservacion
+
+@csrf_exempt
+def all_reservations(request):
+    if request.method != 'GET':
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Método no permitido'
+        }, status=405)
+    
+    reservations = Reservacion.objects.all().select_related('usuario', 'sensor_activado')
+    
+    reservations_list = []
+    
+    for reservation in reservations:
+        reservations_list.append({
+            'idReservacion': reservation.id,
+            "usuario": reservation.usuario.username,
+            "fecha_reservacion": reservation.fecha_reservacion.strftime('%Y-%m-%d %H:%M:%S'),
+            "sensor_activado": reservation.sensor_activado.nombre,
+            'placa': reservation.placa,
+            'activo': reservation.active
+        })
+    
+    return JsonResponse(reservations_list, safe=False)
+
+@csrf_exempt
+def get_one_by_id(request):
+    if request.method != 'POST':
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Método no permitido'
+        }, status=405)
+    
+    try:
+        data_reservacion = json.loads(request.body)
+        print(data_reservacion)
+        reservacion_id = data_reservacion.get('reservacionId')
+
+        reservation = get_reservation_or_fail(reservacion_id)
+    
+        data = {
+            'idReservacion': reservation.id,
+            "usuario": reservation.usuario.username,
+            "fecha_reservacion": reservation.fecha_reservacion.strftime('%Y-%m-%d %H:%M:%S'),
+            "sensor_activado": reservation.sensor_activado.nombre,
+            'placa': reservation.placa,
+            'precio': 10,
+            'activo': reservation.active
+        } 
+        
+        return JsonResponse(data, safe=True)
+    except Http404 as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=404)
+
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Error al actualizar la reservación: {str(e)}'
+        }, status=500)
+    
+@csrf_exempt
+def getIdReservation(request, reservacion_id):
+    if request.method != 'GET':
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Método no permitido'
+        }, status=405)
+    
+    try:
+        reservation = get_reservation_or_fail(reservacion_id)
+    
+        data = {
+            'idReservacion': reservation.id,
+            "usuario": reservation.usuario.username,
+            "fecha_reservacion": reservation.fecha_reservacion.strftime('%Y-%m-%d %H:%M:%S'),
+            "sensor_activado": reservation.sensor_activado.nombre,
+            'placa': reservation.placa,
+            'activo': reservation.active
+        } 
+        
+        return JsonResponse(data, safe=True)
+    except Http404 as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=404)
+
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Error al actualizar la reservación: {str(e)}'
+        }, status=500)
+        
 
 @csrf_exempt
 def actualizar_reservacion(request):
@@ -81,30 +180,25 @@ def actualizar_reservacion(request):
 
     try:
         data = json.loads(request.body)
-        sensor_id = data.get('sensorId')
-        # Validar que el sensorId sea UUID válido
-        try:
-            uuid_sensor_id = uuid.UUID(sensor_id)
-        except ValueError:
-            return JsonResponse({
-                'status': 'error',
-                'message': f'Sensor ID {sensor_id} no válido'
-            }, status=400)
+        sensor_name = data.get('sensorName')
         
-        sensor = get_sensor_or_fail(uuid_sensor_id)
-
+        sensor = Sensor.objects.activos().get(nombre=sensor_name)
+        
         # Obtener la reservación activa para el sensor
         reservacion = Reservacion.objects.filter(sensor_activado=sensor, active=True).first()
 
         if not reservacion:
             return JsonResponse({
                 'status': 'error',
-                'message': f'No hay reservación activa para el sensor con ID {sensor_id}'
+                'message': f'No hay reservación activa para el sensor con el nombre {sensor_name}'
             }, status=404)
 
         # Desactivar la reservación
         reservacion.active = False
         reservacion.save(update_fields=['active'])
+        
+        sensor.estado = True 
+        sensor.save(update_fields=['estado'])
 
         return JsonResponse({
             'status': 'success',
@@ -138,6 +232,12 @@ def get_sensor_or_fail(sensor_id):
     except Sensor.DoesNotExist:
         raise Http404(f"Sensor con id {sensor_id} no encontrado")
     
-    
+def get_reservation_or_fail(reservation_id):
+    try:
+        reservation = get_object_or_404(Reservacion, pk=reservation_id)
+        return reservation
+    except:
+        raise Http404(f"Reservacion con id {reservation_id} no encontrado")
+
 def sensor_is_reserved(sensor):
     return Reservacion.objects.filter(sensor_activado=sensor, active=True).exists()

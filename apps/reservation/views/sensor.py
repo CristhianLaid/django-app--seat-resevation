@@ -78,7 +78,6 @@ def detail_sensor(request):
         sensors_list = []
         
         for sensor in sensors:
-            print(type(sensor.id))
             sensors_list.append({
             'id': str(sensor.id),
             'nombre': sensor.nombre,
