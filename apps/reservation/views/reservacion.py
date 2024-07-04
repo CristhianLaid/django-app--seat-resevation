@@ -87,11 +87,20 @@ def all_reservations(request):
     reservations_list = []
     
     for reservation in reservations:
+        sensor_activado = {
+                'id': reservation.sensor_activado.id,
+                'nombre': reservation.sensor_activado.nombre,
+                'ubicacion': reservation.sensor_activado.ubicacion,
+                'estado': reservation.sensor_activado.estado,
+                'active': reservation.sensor_activado.active,
+                'createdAt': reservation.sensor_activado.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                'updatedAt': reservation.sensor_activado.updated_at.strftime('%Y-%m-%d %H:%M:%S'),
+            } if reservation.sensor_activado else None
         reservations_list.append({
             'idReservacion': reservation.id,
             "usuario": reservation.usuario.username,
             "fecha_reservacion": reservation.fecha_reservacion.strftime('%Y-%m-%d %H:%M:%S'),
-            "sensor_activado": reservation.sensor_activado.nombre,
+            "sensor_activado": sensor_activado,
             'placa': reservation.placa,
             'activo': reservation.active
         })
