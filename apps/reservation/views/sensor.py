@@ -90,15 +90,19 @@ def detail_sensor(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 @csrf_exempt
-def updateSensor(request, idSensor):
+def updateSensor(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            sensor = get_object_or_404(Sensor, pk=idSensor)
             
-            nombre_sensor = data.get('nombre', sensor.nombre)
-            ubicacion_sensor = data.get('ubicacion', sensor.ubicacion)
-            estado_sensor = data.get('estado', sensor.estado)
+            sensors = Sensor.objects.filter(nombre=data['nombre_sensor'])
+            xd= Sensor.objects.get(nombre=sensors)
+            print(xd)
+            for sensor in sensors:
+                print(sensor)
+                nombre_sensor = data.get('nombre', sensor.nombre)
+                ubicacion_sensor = data.get('ubicacion', sensor.ubicacion)
+                estado_sensor = data.get('estado', sensor.estado)
             
             # Validar el campo 'estado'
             if estado_sensor not in [True, False, 'true', 'false', 'True', 'False']:

@@ -9,7 +9,7 @@ urlpatterns = []
 urlpatterns += [
     path('sensor/save/', createSensor, name='createSensor'),  # Endpoint para crear un sensor
     path('sensor/list/', detail_sensor, name='detailSensor'), # Endpoint para listar todos los sensores
-    path('sensor/update/<uuid:idSensor>/', updateSensor, name='updateSensor'),  # Endpoint para actualizar un sensor
+    path('sensor/update/', updateSensor, name='updateSensor'),  # Endpoint para actualizar un sensor
     path('sensor/list/<uuid:idSensor>/', detail_one_sensors, name='detailOneSensor'),  # Endpoint para obtener detalles de un sensor
     path('sensor/delete/<uuid:idSensor>/', deleteSensor, name='deleteSensor'), # Endpoint para eliminar un sensor
 ]

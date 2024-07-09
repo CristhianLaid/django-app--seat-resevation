@@ -169,7 +169,6 @@ def getIdReservation(request, reservacion_id):
             'message': f'Error al actualizar la reservación: {str(e)}'
         }, status=500)
         
-
 @csrf_exempt
 def actualizar_reservacion(request):
     if request.method != 'POST':
@@ -216,7 +215,6 @@ def actualizar_reservacion(request):
             'status': 'error',
             'message': f'Error al actualizar la reservación: {str(e)}'
         }, status=500)
-
 
 def get_user_or_fail(username):
     try:
