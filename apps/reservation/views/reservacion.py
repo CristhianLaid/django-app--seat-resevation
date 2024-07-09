@@ -206,7 +206,7 @@ def actualizar_reservacion(request):
         reservacion.active = False
         reservacion.save(update_fields=['active'])
         
-        sensor.estado = True 
+        sensor.estado = False 
         sensor.save(update_fields=['estado'])
 
         return JsonResponse({
