@@ -64,6 +64,14 @@ class Sensor(ModelBase):
         except Exception as e:
             raise ValidationError(f"No se pudo desactivar el sensor {self.id}: {str(e)}")
         
+    def deactivate(self):
+        try:
+            if self.active:
+                self.active = False
+                self.save(update_fields=['active'])
+        except Exception as e:
+            raise ValidationError(f"No se pudo desactivar el sensor {self.id}: {str(e)}")
+        
     def __str__(self):
         return self.nombre
 

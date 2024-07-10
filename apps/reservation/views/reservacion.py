@@ -20,14 +20,15 @@ def crear_reservacion(request):
         username = data.get('username')
         sensor_id = data.get('sensorId')
         placa = data.get('placa')
+        
         # Validar que el sensorId sea UUID válidos
         try:
             uuid_sensor_id = uuid.UUID(sensor_id)
         except ValueError:
             return JsonResponse({
                 'status': 'error',
-                'message': f'Sensor ID {uuid_sensor_id} no válido'
-            }, status=404)
+                'message': f'Sensor ID {sensor_id} no válido'
+            }, status=400)
         
         user = get_user_or_fail(username)
         sensor = get_sensor_or_fail(uuid_sensor_id)
@@ -61,18 +62,22 @@ def crear_reservacion(request):
 
 
 def create_reservacion(user, sensor, placa):
-    reservacion = Reservacion.objects.create(
-        usuario=user,
-        fecha_reservacion=timezone.now(),
-        sensor_activado=sensor,
-        placa=placa,
-        active=True
-    )
+    try:
+        reservacion = Reservacion.objects.create(
+            usuario=user,
+            fecha_reservacion=timezone.now(),
+            sensor_activado=sensor,
+            placa=placa,
+            active=True
+        )
+        
+        sensor.estado = True  # Activar el estado del sensor
+        sensor.save(update_fields=['estado'])
+        
+        return reservacion
     
-    sensor.estado = True 
-    sensor.save(update_fields=['estado'])
-    
-    return reservacion
+    except Exception as e:
+        raise e
 
 @csrf_exempt
 def all_reservations(request):
