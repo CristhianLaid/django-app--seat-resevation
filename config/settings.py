@@ -51,7 +51,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     "corsheaders",  
     'apps.reservation',
-    'apps.security'
+    'apps.security',
+    'apps.reconocimiento'
 ]
 
 MIDDLEWARE = [
