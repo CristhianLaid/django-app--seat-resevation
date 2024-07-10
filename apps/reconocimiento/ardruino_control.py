@@ -1,6 +1,9 @@
 import serial
 import time
 import threading
+import re
+from django.core.exceptions import ValidationError
+from apps.reservation.models import Sensor
 
 class ArduinoController:
     _instance = None
@@ -18,7 +21,7 @@ class ArduinoController:
         self.port = port
         self.baud_rate = baud_rate
         self.timeout = timeout
-        self.sensores_activados = []
+        self.sensores = {}  # Diccionario para almacenar el estado de los sensores
         self.luz_verde_encendida = False
         self.ser = None
         self.connect_serial()
@@ -51,23 +54,25 @@ class ArduinoController:
     def leer_sensores(self):
         if self.ser and self.ser.in_waiting > 0:
             line = self.ser.readline().decode('utf-8').rstrip()
-            if line == "Sensor 1 Activado":
-                print("El sensor 1 está activado.")
-                if "Sensor 1" not in self.sensores_activados:
-                    self.sensores_activados.append("Sensor 1")
-            elif line == "Sensor 1 Desactivado":
-                print("El sensor 1 está desactivado.")
-                if "Sensor 1" in self.sensores_activados:
-                    self.sensores_activados.remove("Sensor 1")
-            elif line == "Sensor 2 Activado":
-                print("El sensor 2 está activado.")
-                if "Sensor 2" not in self.sensores_activados:
-                    self.sensores_activados.append("Sensor 2")
-            elif line == "Sensor 2 Desactivado":
-                print("El sensor 2 está desactivado.")
-                if "Sensor 2" in self.sensores_activados:
-                    self.sensores_activados.remove("Sensor 2")
-            print(f"Sensores activados: {self.sensores_activados}")
+            match = re.match(r'Sensor (\d+) (Desactivado|Activado)', line)
+            if match:
+                sensor_id = match.group(1)
+                estado = match.group(2) == 'Desactivado'
+                self.f[sensor_id] = estado
+                print(f"Sensor {sensor_id} {'desactivado' if estado else 'activado'}.")
+
+                # Actualizar o crear el estado del sensor en la base de datos
+                sensor_nombre = f'Sensor {sensor_id}'
+                try:
+                    sensor, created = Sensor.objects.get_or_create(nombre=sensor_nombre, defaults={'ubicacion': 'Desconocida'})
+                    sensor.estado = estado
+                    sensor.save(update_fields=['estado'])
+                    if created:
+                        print(f"Nuevo sensor creado: {sensor_nombre}")
+                except Exception as e:
+                    print(f"Error al actualizar o crear el estado del sensor {sensor_id}: {str(e)}")
+
+                print(f"Sensores activados: {[k for k, v in self.sensores.items() if v]}")
 
     def actualizar_estado_luces(self, estado):
         comando = "Encender Verde Independiente" if estado else "Apagar Todas Las Luces"
@@ -94,8 +99,8 @@ class ArduinoController:
                 self.ser.close()
 
     def obtener_estado_puestos(self):
-        total_puestos = 2  # Número total de puestos
-        puestos_ocupados = len(self.sensores_activados)
+        total_puestos = len(self.sensores)  # Número total de puestos basado en la cantidad de sensores
+        puestos_ocupados = sum(self.sensores.values())
         puestos_libres = total_puestos - puestos_ocupados
         return {
             "puestos_ocupados": puestos_ocupados,
