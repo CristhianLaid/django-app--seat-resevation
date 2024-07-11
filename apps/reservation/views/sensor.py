@@ -89,54 +89,86 @@ def detail_sensor(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+# @csrf_exempt
+# def updateSensor(request):
+#     if request.method == 'POST':
+#         try:
+#             data = json.loads(request.body)
+            
+#             # sensors = Sensor.objects.filter(nombre=data['nombre_sensor'])
+#             sensors = Sensor.objects.get(nombre=data['nombre_sensor'])
+            
+#             print(sensors)
+#             xd= Sensor.objects.get(nombre=sensors)
+#             print(xd)
+#             for sensor in sensors:
+#                 print(sensor)
+#                 nombre_sensor = data.get('nombre', sensor.nombre)
+#                 ubicacion_sensor = data.get('ubicacion', sensor.ubicacion)
+#                 estado_sensor = data.get('estado', sensor.estado)
+            
+#             # Validar el campo 'estado'
+#             if estado_sensor not in [True, False, 'true', 'false', 'True', 'False']:
+#                 return JsonResponse({'error': 'Invalid value for estado. Use True or False.'}, status=400)
+            
+#             # Actualizar el sensor con los datos recibidos
+#             sensor.nombre = nombre_sensor
+#             sensor.ubicacion = ubicacion_sensor
+#             sensor.estado = estado_sensor
+            
+#             # Verificar si hay campos para actualizar
+#             fields_to_update = ['nombre', 'ubicacion', 'estado']
+#             if any(field in data for field in fields_to_update):
+#                 sensor.save()
+#                 return JsonResponse({'success': 'Sensor updated successfully'})
+            
+#             # Verificar campos faltantes
+#             required_fields = ['nombre', 'ubicacion']
+#             missing_fields = [field for field in required_fields if field not in data]
+#             if missing_fields:
+#                 return JsonResponse({'error': f'Missing required fields: {", ".join(missing_fields)}'}, status=400)
+            
+#             return JsonResponse({'error': 'No fields to update'}, status=400)
+        
+#         except json.JSONDecodeError:
+#             return JsonResponse({'error': 'Invalid JSON format'}, status=400)
+        
+#         except KeyError as e:
+#             return JsonResponse({'error': f'Missing key in JSON: {str(e)}'}, status=400)
+        
+#         except Exception as e:
+#             return JsonResponse({'error': str(e)}, status=500)
+    
+#     return JsonResponse({'error': 'Method Not Allowed'}, status=405)
+
+    
 @csrf_exempt
 def updateSensor(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            
-            sensors = Sensor.objects.filter(nombre=data['nombre_sensor'])
-            xd= Sensor.objects.get(nombre=sensors)
-            print(xd)
-            for sensor in sensors:
-                print(sensor)
-                nombre_sensor = data.get('nombre', sensor.nombre)
-                ubicacion_sensor = data.get('ubicacion', sensor.ubicacion)
-                estado_sensor = data.get('estado', sensor.estado)
-            
-            # Validar el campo 'estado'
-            if estado_sensor not in [True, False, 'true', 'false', 'True', 'False']:
-                return JsonResponse({'error': 'Invalid value for estado. Use True or False.'}, status=400)
-            
-            # Actualizar el sensor con los datos recibidos
-            sensor.nombre = nombre_sensor
-            sensor.ubicacion = ubicacion_sensor
-            sensor.estado = estado_sensor
-            
-            # Verificar si hay campos para actualizar
-            fields_to_update = ['nombre', 'ubicacion', 'estado']
-            if any(field in data for field in fields_to_update):
-                sensor.save()
-                return JsonResponse({'success': 'Sensor updated successfully'})
-            
-            # Verificar campos faltantes
-            required_fields = ['nombre', 'ubicacion']
-            missing_fields = [field for field in required_fields if field not in data]
-            if missing_fields:
-                return JsonResponse({'error': f'Missing required fields: {", ".join(missing_fields)}'}, status=400)
-            
-            return JsonResponse({'error': 'No fields to update'}, status=400)
-        
-        except json.JSONDecodeError:
-            return JsonResponse({'error': 'Invalid JSON format'}, status=400)
-        
-        except KeyError as e:
-            return JsonResponse({'error': f'Missing key in JSON: {str(e)}'}, status=400)
-        
+            print(request)
+            nombre_sensor = data.get('nombre_sensor')  # Asegúrate de manejar el caso en que 'nombre_sensor' no esté presente
+
+            # Obtener el sensor por su nombre
+            sensor = Sensor.objects.get(nombre=nombre_sensor)
+
+            # Cambiar el estado del sensor
+            sensor.estado = not sensor.estado  # Cambia el estado al contrario del estado actual
+
+            # Guardar el sensor actualizado en la base de datos
+            sensor.save()
+
+            # Devolver una respuesta si es necesario
+            return JsonResponse({'message': f'Estado del sensor {nombre_sensor} actualizado correctamente a {sensor.estado}'}, status=200)
+
+        except Sensor.DoesNotExist:
+            return JsonResponse({'error': f'No se encontró el sensor con nombre {nombre_sensor}'}, status=404)
+
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
-    
-    return JsonResponse({'error': 'Method Not Allowed'}, status=405)
+            return JsonResponse({'error': str(e)}, status=400)
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
 
 @csrf_exempt
 def deleteSensor(request, idSensor):
