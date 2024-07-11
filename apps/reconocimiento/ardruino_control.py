@@ -3,7 +3,7 @@ import time
 import threading
 import re
 from django.core.exceptions import ValidationError
-from apps.reservation.models import Sensor
+from apps.reservation.models import Reservacion, Sensor
 
 class ArduinoController:
     _instance = None
@@ -54,12 +54,12 @@ class ArduinoController:
     def leer_sensores(self):
         if self.ser and self.ser.in_waiting > 0:
             line = self.ser.readline().decode('utf-8').rstrip()
-            match = re.match(r'Sensor (\d+) (Desactivado|Activado)', line)
+            match = re.match(r'Sensor (\d+) (Activado|Desactivado)', line)
             if match:
                 sensor_id = match.group(1)
-                estado = match.group(2) == 'Desactivado'
-                self.f[sensor_id] = estado
-                print(f"Sensor {sensor_id} {'desactivado' if estado else 'activado'}.")
+                estado = match.group(2) == 'Activado'
+                self.sensores[sensor_id] = estado
+                print(f"Sensor {sensor_id} {'activado' if estado else 'desactivado'}.")
 
                 # Actualizar o crear el estado del sensor en la base de datos
                 sensor_nombre = f'Sensor {sensor_id}'
@@ -69,6 +69,16 @@ class ArduinoController:
                     sensor.save(update_fields=['estado'])
                     if created:
                         print(f"Nuevo sensor creado: {sensor_nombre}")
+
+                    # Desactivar la reservación asociada si el sensor está inactivo
+                    if not estado:  # Si el sensor está desactivado
+                        try:
+                            reservacion = Reservacion.objects.get(sensor_activado=sensor, active=True)
+                            reservacion.deactivate_if_sensor_inactive()
+                            print("Reservación eliminada:", reservacion)
+                        except Reservacion.DoesNotExist:
+                            pass  # No hay reservación activa asociada al sensor
+
                 except Exception as e:
                     print(f"Error al actualizar o crear el estado del sensor {sensor_id}: {str(e)}")
 
@@ -106,3 +116,8 @@ class ArduinoController:
             "puestos_ocupados": puestos_ocupados,
             "puestos_libres": puestos_libres
         }
+
+    def reservar_sensor(self, sensor_id):
+        comando = f"Reservar Sensor {sensor_id}"
+        print(comando)
+        self.enviar_comando(comando)
