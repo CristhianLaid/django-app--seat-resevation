@@ -1,30 +1,101 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reconocimiento de Placas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slideIn {
+            animation: slideIn 0.5s ease-out forwards;
+        }
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+    </style>
 </head>
-<body>
-    <h1>Reconocimiento de Placas</h1>
-    <div>
-        <img id="video" src="{% url 'video_feed' %}" width="640" height="480" />
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-6 max-w-4xl">
+        <h1 class="text-3xl font-bold text-center mb-6 text-blue-600 animate-fadeIn">Sistema de Reconocimiento de Placas</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-white shadow-md rounded-lg overflow-hidden animate-fadeIn" style="animation-delay: 0.1s;">
+                <h2 class="text-lg font-semibold bg-blue-500 text-white p-2">Video en Vivo</h2>
+                <div class="p-2">
+                    <img id="video_feed" src="{% url 'video_feed' %}" class="w-full h-auto rounded" alt="Video Feed">
+                </div>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="bg-white shadow-md rounded-lg overflow-hidden animate-fadeIn" style="animation-delay: 0.2s;">
+                    <h2 class="text-lg font-semibold bg-green-500 text-white p-2">Controles Arduino</h2>
+                    <div class="p-2">
+                        <button onclick="startArduino()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition duration-300 transform hover:scale-105">
+                            Iniciar Arduino
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="bg-white shadow-md rounded-lg overflow-hidden animate-fadeIn" style="animation-delay: 0.3s;">
+                    <h2 class="text-lg font-semibold bg-purple-500 text-white p-2">Estado de Puestos</h2>
+                    <div class="p-2">
+                        <button onclick="obtenerEstadoPuestos()" class="w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded transition duration-300 transform hover:scale-105 mb-2">
+                            Obtener Estado
+                        </button>
+                        <div id="estado_puestos" class="bg-gray-100 p-2 rounded-lg text-sm h-24 overflow-auto"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
-        function controlArduino(placa_valida) {
-            fetch('/reconocimiento/start-arduino/?placa_valida=' + placa_valida)
+        function startArduino() {
+            fetch("{% url 'start_arduino' %}")
                 .then(response => response.text())
                 .then(data => {
-                    setTimeout(() => {
-                        actualizarVideo(); // Actualizar el feed de la cámara después de 10 segundos
-                    }, 10000);
-                })
-                .catch(error => console.error('Error:', error));
+                    alert(data);
+                    location.reload();
+                });
         }
 
-        function actualizarVideo() {
-            const videoElement = document.getElementById('video');
-            const timestamp = new Date().getTime();
-            videoElement.src = `{% url 'video_feed' %}?timestamp=${timestamp}`;
+        function obtenerEstadoPuestos() {
+            document.getElementById("estado_puestos").innerHTML = '<div class="animate-pulse text-center">Cargando...</div>';
+            fetch("{% url 'obtener_estado_puestos' %}")
+                .then(response => response.json())
+                .then(data => {
+                    const estadoHTML = `
+                        <div class="grid grid-cols-2 gap-4 text-center">
+                            <div class="bg-red-100 p-3 rounded-lg animate-slideIn" style="animation-delay: 0.1s;">
+                                <p class="text-xl font-bold text-red-600">${data.puestos_ocupados}</p>
+                                <p class="text-sm text-red-500">Ocupados</p>
+                            </div>
+                            <div class="bg-green-100 p-3 rounded-lg animate-slideIn" style="animation-delay: 0.2s;">
+                                <p class="text-xl font-bold text-green-600">${data.puestos_libres}</p>
+                                <p class="text-sm text-green-500">Libres</p>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-center text-gray-600 animate-slideIn" style="animation-delay: 0.3s;">
+                            Total: ${data.puestos_ocupados + data.puestos_libres} puestos
+                        </div>
+                    `;
+                    document.getElementById("estado_puestos").innerHTML = estadoHTML;
+                });
         }
     </script>
 </body>

@@ -64,23 +64,27 @@ def crear_reservacion(request):
 
 def create_reservacion(user, sensor, placa):
     try:
+        placa_mayuscula = placa.upper()
         reservacion = Reservacion.objects.create(
             usuario=user,
             fecha_reservacion=timezone.now(),
             sensor_activado=sensor,
-            placa=placa,
+            placa=placa_mayuscula,
             active=True
         )
-        print(reservacion)
+
+        print("nuevo",reservacion.active)
         sensor.estado = True  # Activar el estado del sensor
         sensor.save(update_fields=['estado'])
         number = reservacion.sensor_activado.nombre
         print(number)
         n=int(number.split()[1])
-        print(n)
+        print("soy sensor",sensor)
+        print("nuevo",reservacion.active)
         reservar = ArduinoController()
         reservar.reservar_sensor(n)
         print("esto es la reservacion",reservacion)
+
         return reservacion
     
     except Exception as e:
@@ -129,7 +133,7 @@ def get_one_by_id(request):
     
     try:
         data_reservacion = json.loads(request.body)
-        print(data_reservacion)
+        print("este",data_reservacion)
         reservacion_id = data_reservacion.get('reservacionId')
 
         reservation = get_reservation_or_fail(reservacion_id)

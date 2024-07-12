@@ -10,15 +10,17 @@ from apps.reservation.models import Reservacion
 from .ardruino_control import ArduinoController
 import time
 
-class VideoCamera:
-    def __init__(self):
+class VideoCameraView(View):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.lock = Lock()
         self.video = cv2.VideoCapture(0, cv2.CAP_DSHOW)
         pytesseract.pytesseract.tesseract_cmd = r'C:\Users\USER\AppData\Local\Programs\Tesseract-OCR\tesseract'
         self.update_placas_validas()
         self.placas_detectadas_recientemente = []
+        self.placa_valida_detectada = None
 
-    def __del__(self):  # Corrected the destructor method
+    def __del__(self):
         self.video.release()
 
     def get_frame(self):
@@ -35,6 +37,7 @@ class VideoCamera:
                 placa_valida = self.procesar_placa(frame, gris, x, y, w, h, contorno)
                 if placa_valida:
                     self.enviar_comando_arduino(placa_valida)
+                    self.placa_valida_detectada = placa_valida
 
             ret, jpeg = cv2.imencode('.jpg', frame)
             return jpeg.tobytes()
@@ -69,8 +72,10 @@ class VideoCamera:
 
         placa_valida = self.validar_placa(texto_limpio)
         if placa_valida:
+            self.placas_validas = list(Reservacion.objects.filter(active=False).values_list('placa', flat=True).distinct())
             print(f"Placa válida detectada: {texto_limpio}")
         else:
+
             print(f"Placa inválida detectada: {texto_limpio}")
 
         color = (0, 255, 0) if placa_valida else (0, 0, 255)
@@ -109,8 +114,6 @@ class VideoCamera:
             self.video.release()
             self.video = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 
-
-
     def apagar_camara(self):
         with self.lock:
             self.video.release()
@@ -119,23 +122,21 @@ class VideoCamera:
         with self.lock:
             if not self.video.isOpened():
                 self.video = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+class VideoFeedView(View):
+    def get(self, request):
+        camera_view = VideoCameraView()
+        return StreamingHttpResponse(self.gen(camera_view), content_type='multipart/x-mixed-replace; boundary=frame')
 
-
-def gen(camera):
-    while True:
-        frame = camera.get_frame()
-        if frame:
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
-        else:
-            time.sleep(1)
-
+    def gen(self, camera_view):
+        while True:
+            frame = camera_view.get_frame()
+            if frame:
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
+            else:
+                time.sleep(1)
 def index(request):
-    """ video_feed() """
     return render(request, 'reconocimiento/index.html')
-
-def video_feed(request):
-    return StreamingHttpResponse(gen(VideoCamera()), content_type='multipart/x-mixed-replace; boundary=frame')
 
 class ArduinoView(View):
     def get(self, request):
