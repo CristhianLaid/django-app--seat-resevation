@@ -54,12 +54,12 @@ class ArduinoController:
     def leer_sensores(self):
         if self.ser and self.ser.in_waiting > 0:
             line = self.ser.readline().decode('utf-8').rstrip()
-            match = re.match(r'Sensor (\d+) (Desactivado|Activado)', line)
+            match = re.match(r'Sensor (\d+) (Activado|Desactivado)', line)
             if match:
                 sensor_id = match.group(1)
-                estado = match.group(2) == 'Desactivado'
+                estado = match.group(2) == 'Activado'
                 self.sensores[sensor_id] = estado
-                print(f"Sensor {sensor_id} {'desactivado' if estado else 'activo'}.")
+                print(f"Sensor {sensor_id} {'activado' if estado else 'desactivado'}.")
 
                 # Actualizar o crear el estado del sensor en la base de datos
                 sensor_nombre = f'Sensor {sensor_id}'
@@ -75,9 +75,10 @@ class ArduinoController:
                         try:
                             reservacion = Reservacion.objects.get(sensor_activado=sensor, active=True)
                             reservacion.deactivate_if_sensor_inactive()
+                            print("Reservación eliminada:", reservacion)
                         except Reservacion.DoesNotExist:
                             pass  # No hay reservación activa asociada al sensor
-                            
+
                 except Exception as e:
                     print(f"Error al actualizar o crear el estado del sensor {sensor_id}: {str(e)}")
 
@@ -115,3 +116,8 @@ class ArduinoController:
             "puestos_ocupados": puestos_ocupados,
             "puestos_libres": puestos_libres
         }
+
+    def reservar_sensor(self, sensor_id):
+        comando = f"Reservar Sensor {sensor_id}"
+        print(comando)
+        self.enviar_comando(comando)
