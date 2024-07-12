@@ -134,7 +134,7 @@ def updateSensor(request, idSensor):
     
     return JsonResponse({'error': 'Method Not Allowed'}, status=405)
  """
-@csrf_exempt
+""" @csrf_exempt
 def updateSensor(request):
     if request.method == 'POST':
         try:
@@ -159,7 +159,36 @@ def updateSensor(request):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
 
+    return JsonResponse({'error': 'Método no permitido'}, status=405) """
+@csrf_exempt
+def updateSensor(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            print(request)
+            nombre_sensor = data.get('nombre_sensor')  # Asegúrate de manejar el caso en que 'nombre_sensor' no esté presente
+
+            # Obtener el sensor por su nombre
+            sensor = Sensor.objects.get(nombre=nombre_sensor)
+
+            # Cambiar el estado del sensor
+            sensor.estado = not sensor.estado  # Cambia el estado al contrario del estado actual
+
+            # Guardar el sensor actualizado en la base de datos
+            sensor.save()
+
+            # Devolver una respuesta si es necesario
+            return JsonResponse({'message': f'Estado del sensor {nombre_sensor} actualizado correctamente a {sensor.estado}'}, status=200)
+
+        except Sensor.DoesNotExist:
+            return JsonResponse({'error': f'No se encontró el sensor con nombre {nombre_sensor}'}, status=404)
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+
     return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
 @csrf_exempt
 def deleteSensor(request, idSensor):
     if request.method != 'DELETE':

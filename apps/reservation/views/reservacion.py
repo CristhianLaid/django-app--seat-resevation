@@ -40,7 +40,12 @@ def crear_reservacion(request):
                 'status': 'error',
                 'message': f'El sensor con ID {sensor_id} ya está reservado'
             }, status=400)
-
+        
+        if placa_is_reserved(placa):
+            return JsonResponse({
+                'status': 'error',
+                'message': f'La placa con la {placa} ya se encuentra reservada'
+            }, status=400)
         reservacion = create_reservacion(user, sensor, placa)
         
         return JsonResponse({
@@ -116,7 +121,7 @@ def all_reservations(request):
             'idReservacion': reservation.id,
             "usuario": reservation.usuario.username,
             "fecha_reservacion": reservation.fecha_reservacion.strftime('%Y-%m-%d %H:%M:%S'),
-            "sensor_activado": sensor_activado,
+             "sensor_activado": sensor_activado,
             'placa': reservation.placa,
             'activo': reservation.active
         })
@@ -219,7 +224,7 @@ def actualizar_reservacion(request):
             }, status=404)
 
         # Desactivar la reservación
-        reservacion.active = False
+        sensor.estado = False 
         reservacion.save(update_fields=['active'])
         
         sensor.estado = False 
@@ -266,3 +271,11 @@ def get_reservation_or_fail(reservation_id):
 
 def sensor_is_reserved(sensor):
     return Reservacion.objects.filter(sensor_activado=sensor, active=True).exists()
+
+def placa_is_reserved(placa):
+    reservaciones_activas = Reservacion.objects.select_related('sensor_activado').filter(
+        placa=placa,
+        active=True
+    )
+    print("Estoyu aca: ", reservaciones_activas)
+    return reservaciones_activas.exists()
