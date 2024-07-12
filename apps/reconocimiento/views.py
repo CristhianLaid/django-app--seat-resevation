@@ -14,11 +14,11 @@ class VideoCamera:
     def __init__(self):
         self.lock = Lock()
         self.video = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-        pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
+        pytesseract.pytesseract.tesseract_cmd = r'C:\Users\USER\AppData\Local\Programs\Tesseract-OCR\tesseract'
         self.update_placas_validas()
         self.placas_detectadas_recientemente = []
 
-    def _del_(self):
+    def __del__(self):  # Corrected the destructor method
         self.video.release()
 
     def get_frame(self):
@@ -100,9 +100,16 @@ class VideoCamera:
     def restaurar_estado_arduino(self, placa):
         time.sleep(10)  # Mantener la luz verde encendida durante 10 segundos
         arduino_controller = ArduinoController()
-        arduino_controller.actualizar_estado_luces(False)  # Apagar luz verde
+        arduino_controller.actualizar_estado_luces(False)  # Apagar luz verde y encender luz roja
         self.placas_detectadas_recientemente.remove(placa)
-        self.encender_camara()
+        self.reiniciar_camara()  # Reiniciar la cámara
+
+    def reiniciar_camara(self):
+        with self.lock:
+            self.video.release()
+            self.video = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+
+
 
     def apagar_camara(self):
         with self.lock:
@@ -110,7 +117,9 @@ class VideoCamera:
 
     def encender_camara(self):
         with self.lock:
-            self.video = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+            if not self.video.isOpened():
+                self.video = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+
 
 def gen(camera):
     while True:
@@ -122,6 +131,7 @@ def gen(camera):
             time.sleep(1)
 
 def index(request):
+    """ video_feed() """
     return render(request, 'reconocimiento/index.html')
 
 def video_feed(request):
