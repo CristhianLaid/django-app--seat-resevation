@@ -128,6 +128,13 @@ class Reservacion(ModelBase):
                 self.save(update_fields=['active'])
         except Exception as e:
             raise ValidationError(f"No se pudo desactivar la reservación {self.id}: {str(e)}")
+    def deactivate_if_sensor_inactive(self):
+        try:
+            if self.active and self.sensor_activado and not self.sensor_activado.estado:
+                self.active = False
+                self.save(update_fields=['active'])
+        except Exception as e:
+            raise ValidationError(f"No se pudo desactivar la reservación {self.id}: {str(e)}")
         
     def __str__(self):
         return f"Reservacion {self.id} - {self.fecha_reservacion}"
